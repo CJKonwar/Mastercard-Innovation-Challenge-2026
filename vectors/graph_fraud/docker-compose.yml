@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  adversarial-loop:
+    build: .
+    image: ai-defense-lab:latest
+    environment:
+      # The application expects this API key to use the LLM Strategist.
+      # You can either set it here, or create a .env file in the same directory:
+      # GEMINI_API_KEY=your_actual_api_key_here
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    volumes:
+      # Mount the local directory to the container so that saved models
+      # and metrics JSON files persist on your local machine after the run.
+      - .:/app
