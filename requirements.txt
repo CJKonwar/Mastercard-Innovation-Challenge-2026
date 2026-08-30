@@ -1,0 +1,34 @@
+# AI Defense Lab - the single dependency list for all four attack vectors.
+# Install once from the repo root:  pip install -r requirements.txt
+#
+# Grouped by vector so you can see what belongs to what, but there is no
+# per-vector requirements.txt - this file is the only source of truth.
+
+# --- shared ---
+numpy
+pandas
+networkx
+scikit-learn
+
+# --- prompt injection (agentic commerce) ---
+ollama                 # local Qwen3 serving; needs the Ollama app running
+python-dotenv
+joblib
+torch                  # Tier 2 provenance GNN
+pytest
+google-genai           # optional attacker backend: ADL_ATTACKER_MODEL=gemini-2.5-flash
+
+# --- token replay (Agent Pay trust chain) ---
+lightgbm               # Layer 2 risk scorer
+
+# --- merchant fraud (CTGAN hard-negative mining) ---
+ctgan                  # minority-class generative model
+tensorflow             # Keras Blue Team MLP (~500 MB install)
+
+# --- graph fraud (mule networks / cross-rail) ---
+faker
+google-generativeai    # LLM Red Team strategist (Gemini)
+torch-geometric        # INSTALL LAST - must version-match the torch above.
+                       # A mismatched install can break the torch that the
+                       # prompt-injection Tier 2 GNN depends on; consider a
+                       # separate venv for this vector if it gives trouble.
