@@ -1,0 +1,21 @@
+[
+  {
+    "round": 0,
+    "coverage": 52,
+    "total_cells": 288,
+    "mean_fitness": 1.3534596153846152,
+    "seed_total": 48,
+    "seed_success": 29,
+    "seed_asr": 0.6041666666666666,
+    "seed_detection_rate": 0.125,
+    "seed_mean_risk": 0.19481250000000003,
+    "mutations_attempted": 5,
+    "mutations_evaluated": 5,
+    "mutations_failed_json": 0,
+    "mutations_won_cell": 4,
+    "mutation_success": 2,
+    "mutation_asr": 0.4,
+    "mutation_detection_rate": 0.4,
+    "mutation_mean_risk": 0.3
+  }
+]
