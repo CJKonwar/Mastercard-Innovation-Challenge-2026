@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Panel, Tag, MetricCard, Pill, EmptyState } from '../components/ui'
+import { Panel, Tag, MetricCard, ListCard, Pill, EmptyState } from '../components/ui'
 import RunPanel from '../components/RunPanel'
 import { Header } from './PromptInjection'
 import { useResultsContext } from '../lib/ResultsContext'
@@ -16,12 +16,14 @@ export default function MerchantFraud() {
         title="Merchant Fraud · adversarial augmentation"
         subtitle="A generation campaign, not a round-based loop. CTGAN produces fraud candidates; whatever evades the classifier is precisely what gets fed back into training."
         status={mf ? `${mf.generated.toLocaleString()} candidates` : 'not run yet'}
+        accent="amber"
       />
 
       <RunPanel
         vector="merchant-fraud"
         title="Run the campaign"
         note="fully local (CTGAN + Keras) — no API quota used"
+        accent="amber"
         onDone={refetch}
         fields={[
           { key: 'samples', kind: 'number', label: 'Candidates to generate', defaultValue: 5000, min: 100, max: 20000 },
@@ -41,7 +43,7 @@ function Dashboard({ mf }: { mf: MerchantFraudData }) {
 
   return (
     <>
-      <Panel title="Generate → filter → mine" tags={<><Tag accent="red">red</Tag><Tag accent="blue">blue</Tag></>} note="the evaded column is the product, not the failure">
+      <Panel title="Generate → filter → mine" tags={<><Tag accent="red">red</Tag><Tag accent="blue">blue</Tag></>} note="the evaded column is the product, not the failure" accent="amber">
         <PipelineDiagram mf={mf} />
       </Panel>
 
@@ -52,12 +54,12 @@ function Dashboard({ mf }: { mf: MerchantFraudData }) {
         <MetricCard label="Threshold" value={mf.threshold.toFixed(2)} accent="blue" sub="decision boundary" />
       </div>
 
-      <Panel title="Augmentation lifts every metric" note="pre- vs. post-CTGAN augmentation, from the team's held-out ablation">
+      <Panel title="Augmentation lifts every metric" note="pre- vs. post-CTGAN augmentation, from the team's held-out ablation" accent="amber">
         <TrainCurveChart rows={mf.trainCurve} />
       </Panel>
 
       {sample && (
-        <Panel title="Explore an evaded candidate" note="real synthetic profiles that beat the classifier — click through them">
+        <Panel title="Explore an evaded candidate" note="real synthetic profiles that beat the classifier — click through them" accent="amber">
           <div className="flex gap-1.5 mb-4 flex-wrap">
             {mf.evadedSamples.map((_, i) => (
               <button
@@ -84,27 +86,36 @@ function Dashboard({ mf }: { mf: MerchantFraudData }) {
               <Field label="Refund ratio" value={sample.refundRatio.toFixed(3)} />
             </div>
             <div className="flex flex-col items-center justify-center rounded-lg border px-5 py-3" style={{ borderColor: 'var(--red-line)', background: 'var(--red-wash)' }}>
-              <div className="text-[length:var(--text-2xs)] font-semibold uppercase" style={{ color: 'var(--red)' }}>fraud probability</div>
+              <div className="text-[length:var(--text-xs)] font-bold uppercase tracking-wide" style={{ color: 'var(--red)' }}>fraud probability</div>
               <div className="font-mono text-[length:var(--text-2xl)] font-bold" style={{ color: 'var(--red)' }}>{sample.fraudProbability.toFixed(3)}</div>
               <Pill tone="evaded">EVADED (threshold {mf.threshold})</Pill>
             </div>
           </div>
-          <p className="text-[length:var(--text-xs)] mt-3.5" style={{ color: 'var(--muted)' }}>
+          <p className="text-[length:var(--text-xs)] mt-3.5 leading-relaxed" style={{ color: 'var(--ink-2)' }}>
             Evaded rows cluster near legitimate profiles — long tenure, healthy credit, low refund ratio.
             That resemblance to the legitimate class is exactly what makes them useful as hard negatives.
           </p>
         </Panel>
       )}
 
-      <Panel title="Why the evaded samples matter" tags={<Tag accent="red">the product</Tag>}>
+      <Panel title="Why the evaded samples matter" tags={<Tag accent="red">the product</Tag>} accent="amber">
         <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
-          <Step tag="step 1" tone="red" title="Model the minority class">
+          <Step
+            tag="step 1" tone="red" title="Model the minority class"
+            icon={<><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></>}
+          >
             CTGAN is trained only on real fraud, so it learns that distribution rather than resampling it. Generated rows are novel, not duplicates.
           </Step>
-          <Step tag="step 2" tone="amber" title="Reject the unrealistic">
+          <Step
+            tag="step 2" tone="amber" title="Reject the unrealistic"
+            icon={<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />}
+          >
             Domain constraints filter anything structurally impossible — negative tenure, chargeback ratios above one. Fidelity is enforced, not hoped for.
           </Step>
-          <Step tag="step 3" tone="blue" title="Keep only what wins">
+          <Step
+            tag="step 3" tone="blue" title="Keep only what wins"
+            icon={<><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>}
+          >
             The {mf.evaded} that evaded are realistic, valid, and demonstrably hard for the current model. Folding them back beats thousands of easy samples.
           </Step>
         </div>
@@ -116,21 +127,34 @@ function Dashboard({ mf }: { mf: MerchantFraudData }) {
 function Field({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
-      <div className="text-[length:var(--text-2xs)] font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{label}</div>
+      <div className="text-[length:var(--text-xs)] font-bold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{label}</div>
       <div className="font-mono text-[length:var(--text-base)] font-semibold mt-0.5">{value}</div>
     </div>
   )
 }
 
-function Step({ tag, tone, title, children }: { tag: string; tone: 'red' | 'amber' | 'blue'; title: string; children: React.ReactNode }) {
+function Step({
+  tag, tone, title, icon, children,
+}: {
+  tag: string
+  tone: 'red' | 'amber' | 'blue'
+  title: string
+  icon: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
-    <div className="rounded-lg border p-3" style={{ borderColor: 'var(--rule-soft)', background: 'var(--surface-2)' }}>
-      <div className="flex items-center gap-2 mb-1.5">
+    <ListCard>
+      <div className="flex items-center justify-between gap-2 mb-2.5">
         <Tag accent={tone}>{tag}</Tag>
+        <span className="flex items-center justify-center w-8 h-8 rounded-full shrink-0" style={{ background: `var(--${tone}-wash)` }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={`var(--${tone})`} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            {icon}
+          </svg>
+        </span>
       </div>
-      <div className="text-[length:var(--text-sm)] font-semibold mb-1">{title}</div>
-      <p className="text-[length:var(--text-xs)]" style={{ color: 'var(--ink-2)' }}>{children}</p>
-    </div>
+      <div className="text-[length:var(--text-sm)] font-bold mb-1.5">{title}</div>
+      <p className="text-[length:var(--text-xs)] leading-relaxed" style={{ color: 'var(--ink-2)' }}>{children}</p>
+    </ListCard>
   )
 }
 
@@ -160,36 +184,41 @@ function PipelineDiagram({ mf }: { mf: MerchantFraudData }) {
   ]
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-0 overflow-x-auto">
+      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${stages.length + 1}, minmax(0,1fr))` }}>
         {stages.map((s) => (
-          <div key={s.label} className="flex items-center">
-            <div className="rounded-lg border px-4 py-3 min-w-[150px] text-center" style={{ borderColor: 'var(--rule)' }}>
-              <div className="text-[length:var(--text-xs)] font-semibold" style={{ color: s.color }}>{s.label}</div>
-              <div className="font-mono text-[length:var(--text-lg)] font-semibold mt-1" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-[length:var(--text-2xs)] mt-0.5" style={{ color: 'var(--muted)' }}>{s.sub}</div>
+          <div key={s.label} className="flex items-stretch min-w-0">
+            <div
+              className="rounded-xl border px-4.5 py-4 flex-1 min-w-0 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              style={{ borderColor: 'var(--rule)', background: 'var(--surface)', boxShadow: 'var(--shadow-sm)' }}
+            >
+              <div className="text-[length:var(--text-xs)] font-bold uppercase tracking-wide" style={{ color: s.color }}>{s.label}</div>
+              <div className="font-mono text-[length:var(--text-2xl)] font-bold mt-1.5" style={{ color: s.color }}>{s.value}</div>
+              <div className="text-[length:var(--text-xs)] mt-1" style={{ color: 'var(--muted)' }}>{s.sub}</div>
             </div>
-            <svg width="28" height="20" className="shrink-0" aria-hidden="true">
-              <line x1="2" y1="10" x2="24" y2="10" stroke="var(--ink-2)" strokeWidth="1.6" markerEnd="url(#mf-ar)" />
-              <defs>
-                <marker id="mf-ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                  <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-2)" />
-                </marker>
-              </defs>
-            </svg>
+            <div className="flex items-center justify-center w-9 shrink-0">
+              <svg width="26" height="20" aria-hidden="true">
+                <line x1="2" y1="10" x2="22" y2="10" stroke="var(--ink-2)" strokeWidth="1.8" markerEnd="url(#mf-ar)" />
+                <defs>
+                  <marker id="mf-ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                    <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-2)" />
+                  </marker>
+                </defs>
+              </svg>
+            </div>
           </div>
         ))}
-        <div className="flex flex-col gap-2">
-          <div className="rounded-lg border px-4 py-2 text-center" style={{ borderColor: 'var(--blue-line)' }}>
-            <div className="text-[length:var(--text-2xs)] font-semibold" style={{ color: 'var(--blue)' }}>DETECTED</div>
-            <div className="font-mono text-[length:var(--text-base)] font-semibold" style={{ color: 'var(--blue)' }}>{mf.detected.toLocaleString()}</div>
+        <div className="flex flex-col gap-2 min-w-0 justify-center">
+          <div className="rounded-lg border px-3.5 py-2.5 text-center" style={{ borderColor: 'var(--blue-line)', background: 'var(--blue-wash)' }}>
+            <div className="text-[length:var(--text-xs)] font-bold uppercase tracking-wide" style={{ color: 'var(--blue)' }}>Detected</div>
+            <div className="font-mono text-[length:var(--text-lg)] font-bold" style={{ color: 'var(--blue)' }}>{mf.detected.toLocaleString()}</div>
           </div>
-          <div className="rounded-lg border px-4 py-2 text-center" style={{ borderColor: 'var(--red-line)' }}>
-            <div className="text-[length:var(--text-2xs)] font-semibold" style={{ color: 'var(--red)' }}>EVADED</div>
-            <div className="font-mono text-[length:var(--text-base)] font-semibold" style={{ color: 'var(--red)' }}>{mf.evaded}</div>
+          <div className="rounded-lg border px-3.5 py-2.5 text-center" style={{ borderColor: 'var(--red-line)', background: 'var(--red-wash)' }}>
+            <div className="text-[length:var(--text-xs)] font-bold uppercase tracking-wide" style={{ color: 'var(--red)' }}>Evaded</div>
+            <div className="font-mono text-[length:var(--text-lg)] font-bold" style={{ color: 'var(--red)' }}>{mf.evaded}</div>
           </div>
         </div>
       </div>
-      <div className="rounded-lg border px-3.5 py-2.5 text-[length:var(--text-xs)]" style={{ borderColor: 'var(--red-line)', background: 'var(--red-wash)', color: 'var(--red)' }}>
+      <div className="rounded-lg border px-4 py-3 text-[length:var(--text-sm)]" style={{ borderColor: 'var(--red-line)', background: 'var(--red-wash)', color: 'var(--red)' }}>
         <strong>{mf.evaded} evaded candidates mined as hard negatives</strong> → next training set. The attack makes the defense stronger — that is the loop.
       </div>
     </div>

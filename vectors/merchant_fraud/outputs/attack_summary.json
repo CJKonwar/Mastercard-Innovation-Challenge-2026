@@ -1,17 +1,17 @@
 {
-    "timestamp": "2026-08-30T11:18:53.632812",
-    "requested_valid_samples": 5000,
-    "total_ctgan_candidates_generated": 5000,
-    "valid_samples_tested": 5000,
+    "timestamp": "2026-08-31T00:45:31.423540",
+    "requested_valid_samples": 500,
+    "total_ctgan_candidates_generated": 500,
+    "valid_samples_tested": 500,
     "blue_team_threshold": 0.5,
-    "detected_samples": 4859,
-    "evaded_samples": 141,
-    "detection_rate": 0.9718,
-    "evasion_rate": 0.0282,
+    "detected_samples": 489,
+    "evaded_samples": 11,
+    "detection_rate": 0.978,
+    "evasion_rate": 0.022,
     "fraud_probability": {
-        "minimum": 0.0029985278379172087,
+        "minimum": 0.00650869682431221,
         "maximum": 1.0,
-        "mean": 0.9674652218818665,
+        "mean": 0.9768050909042358,
         "median": 1.0
     }
 }

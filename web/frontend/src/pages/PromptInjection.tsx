@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Panel, Tag, MetricCard, Field, StatusPill, EmptyState } from '../components/ui'
+import { Panel, Tag, MetricCard, ListCard, Field, StatusPill, EmptyState } from '../components/ui'
 import RunPanel from '../components/RunPanel'
 import { useResultsContext } from '../lib/ResultsContext'
 import type { PromptInjectionData } from '../data/types'
+import type { Accent } from '../data'
 
 const TECHNIQUE_LABEL: Record<string, string> = {
   t0_naive_imperative: 'T0 — naive imperative',
@@ -24,12 +25,13 @@ export default function PromptInjection() {
         title="Prompt Injection · closed loop"
         subtitle="Each round the attacker evolves against the current defense; the defense then retrains on whatever beat it."
         status={pi ? `${pi.history.length} round${pi.history.length === 1 ? '' : 's'} recorded` : 'not run yet'}
+        accent="red"
       />
 
       <RunPanel
         vector="prompt-injection"
         title="Run the closed loop"
-        note="Gemini attacker + local Qwen3-8B target agent — mind your API quota"
+        accent="red"
         onDone={refetch}
         fields={[
           { key: 'rounds', kind: 'number', label: 'Rounds', defaultValue: 3, min: 1, max: 10 },
@@ -72,7 +74,7 @@ function Dashboard({ pi }: { pi: PromptInjectionData }) {
       <Panel
         title="The loop"
         tags={<><Tag accent="red">red</Tag><Tag accent="blue">blue</Tag></>}
-        note="a local Qwen3-8B target agent + Gemini 2.5 Flash attacker, or fully local"
+        accent="red"
       >
         <LoopDiagram archiveSize={pi.archiveSize} totalCells={pi.totalCells} />
       </Panel>
@@ -87,7 +89,7 @@ function Dashboard({ pi }: { pi: PromptInjectionData }) {
       )}
 
       {pi.history.length > 1 && (
-        <Panel title="Metrics by round" note="seed ASR uses a fixed set — movement there is purely the defense">
+        <Panel title="Metrics by round" note="seed ASR uses a fixed set — movement there is purely the defense" accent="red">
           <RoundChart history={pi.history} />
         </Panel>
       )}
@@ -95,6 +97,7 @@ function Dashboard({ pi }: { pi: PromptInjectionData }) {
       <Panel
         title="Try an attack configuration"
         note="real archive data — every result below actually ran against the target agent"
+        accent="red"
       >
         <div className="flex flex-wrap gap-3 mb-4">
           <Field label="Surface" value={activeSurface} onChange={setSurface} options={surfaces.map((s) => ({ value: s, label: s.replace(/_/g, ' ') }))} />
@@ -103,26 +106,26 @@ function Dashboard({ pi }: { pi: PromptInjectionData }) {
         </div>
 
         {matches.length > 0 ? (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-3">
             {matches.map((e, i) => (
-              <div key={i} className="rounded-lg border p-3" style={{ borderColor: 'var(--rule-soft)', background: 'var(--surface-2)' }}>
-                <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              <ListCard key={i}>
+                <div className="flex items-center gap-2 flex-wrap mb-2">
                   <Tag accent="red">fitness {e.fitness.toFixed(3)}</Tag>
-                  <span className="font-mono text-[length:var(--text-2xs)]" style={{ color: 'var(--muted)' }}>
+                  <span className="font-mono text-[length:var(--text-xs)]" style={{ color: 'var(--ink-2)' }}>
                     {e.surface} &middot; {TECHNIQUE_LABEL[e.technique] ?? e.technique} &middot; {e.objective}
                   </span>
                 </div>
                 <p className="font-mono text-[length:var(--text-sm)] leading-relaxed" style={{ color: 'var(--ink)' }}>&ldquo;{e.text}&rdquo;</p>
                 {e.targetSpec && Object.keys(e.targetSpec).length > 0 && (
-                  <div className="mt-1.5 text-[length:var(--text-2xs)] font-mono" style={{ color: 'var(--muted)' }}>
+                  <div className="mt-2 text-[length:var(--text-xs)] font-mono" style={{ color: 'var(--ink-2)' }}>
                     target: {Object.entries(e.targetSpec).map(([k, v]) => `${k}=${v}`).join(', ')}
                   </div>
                 )}
-              </div>
+              </ListCard>
             ))}
           </div>
         ) : (
-          <div className="text-[length:var(--text-sm)] rounded-lg border px-3.5 py-4" style={{ borderColor: 'var(--rule-soft)', color: 'var(--muted)', background: 'var(--surface-2)' }}>
+          <div className="text-[length:var(--text-sm)] rounded-lg border px-3.5 py-4 leading-relaxed" style={{ borderColor: 'var(--rule-soft)', color: 'var(--ink-2)', background: 'var(--surface-2)' }}>
             No elite claimed this exact niche yet — MAP-Elites only keeps a cell once something wins it.
             {otherTechniques.length > 0 && (
               <> This surface/objective pair <em>is</em> covered by other techniques: {otherTechniques.map((e) => TECHNIQUE_LABEL[e.technique] ?? e.technique).join(', ')}.</>
@@ -132,10 +135,10 @@ function Dashboard({ pi }: { pi: PromptInjectionData }) {
       </Panel>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: '1fr 1fr' }}>
-        <Panel title="Technique distribution" note={`${pi.archiveSize} elites`}>
+        <Panel title="Technique distribution" note={`${pi.archiveSize} elites`} accent="red">
           <BreakdownBars counts={pi.techniqueCounts} labelMap={TECHNIQUE_LABEL} total={pi.archiveSize} />
         </Panel>
-        <Panel title="Top elites by fitness" note="highest-reward payloads this archive">
+        <Panel title="Top elites by fitness" note="highest-reward payloads this archive" accent="red">
           <div className="flex flex-col max-h-[280px] overflow-y-auto">
             {pi.sampleElites.slice(0, 8).map((e, i) => (
               <div key={i} className="grid gap-2 items-center py-1.75 border-b font-mono text-[length:var(--text-xs)]" style={{ borderColor: 'var(--rule-soft)', gridTemplateColumns: '44px 1fr auto' }}>
@@ -151,12 +154,34 @@ function Dashboard({ pi }: { pi: PromptInjectionData }) {
   )
 }
 
-export function Header({ title, subtitle, status }: { title: string; subtitle: string; status: string }) {
+export function Header({
+  title, subtitle, status, accent = 'ink',
+}: {
+  title: string
+  subtitle: string
+  status: string
+  accent?: Accent | 'ink'
+}) {
+  const color = accent === 'ink' ? 'var(--ink)' : `var(--${accent})`
   return (
-    <div className="flex items-end justify-between gap-4 flex-wrap">
-      <div>
-        <h1 className="text-[length:var(--text-xl)] font-bold">{title}</h1>
-        <p className="text-[length:var(--text-sm)] mt-1 max-w-[68ch]" style={{ color: 'var(--muted)' }}>{subtitle}</p>
+    <div
+      className="relative overflow-hidden rounded-xl border pl-6 pr-5 py-4.5 flex items-start justify-between gap-4 flex-wrap"
+      style={{ background: 'var(--surface)', borderColor: 'var(--rule)', boxShadow: 'var(--shadow-sm)' }}
+    >
+      <span className="absolute left-0 top-0 bottom-0 w-1.5" style={{ background: color }} />
+      <div className="min-w-0">
+        <h1 className="text-[length:var(--text-2xl)] font-extrabold tracking-tight leading-tight">{title}</h1>
+        <div
+          className="flex items-start gap-2.5 mt-3 rounded-lg px-3.5 py-2.5 max-w-[68ch]"
+          style={{ background: 'var(--surface-2)', border: '1px solid var(--rule-soft)' }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+          <p className="text-[length:var(--text-sm)] leading-relaxed" style={{ color: 'var(--ink-2)' }}>{subtitle}</p>
+        </div>
       </div>
       <StatusPill live={false}>{status}</StatusPill>
     </div>
@@ -169,7 +194,7 @@ function BreakdownBars({ counts, labelMap, total }: { counts: Record<string, num
     <div className="flex flex-col gap-2.5">
       {entries.map(([k, v]) => (
         <div key={k} className="flex items-center gap-2.5">
-          <span className="font-mono text-[length:var(--text-2xs)] w-[132px] shrink-0 truncate" style={{ color: 'var(--ink-2)' }}>{labelMap[k] ?? k}</span>
+          <span className="font-mono text-[length:var(--text-xs)] w-[144px] shrink-0 truncate" style={{ color: 'var(--ink-2)' }}>{labelMap[k] ?? k}</span>
           <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--sunk)' }}>
             <div className="h-full rounded-full" style={{ width: `${(v / total) * 100}%`, background: 'var(--red)', opacity: 0.75 }} />
           </div>
@@ -182,37 +207,78 @@ function BreakdownBars({ counts, labelMap, total }: { counts: Record<string, num
 
 function LoopDiagram({ archiveSize, totalCells }: { archiveSize: number; totalCells: number }) {
   const stages = [
-    { n: '1', label: 'GENERATE', color: 'var(--red)', sub: 'payloads mutated' },
-    { n: '2', label: 'SIMULATE', color: 'var(--ink)', sub: 'agent runs' },
-    { n: '3', label: 'DETECT', color: 'var(--blue)', sub: 'scored by 3 tiers' },
-    { n: '4', label: 'JUDGE', color: 'var(--amber)', sub: 'money moved wrong?' },
-    { n: '5', label: 'RETRAIN', color: 'var(--blue)', sub: 'elites harvested' },
+    {
+      n: '1', label: 'Generate', color: 'var(--red)', wash: 'var(--red-wash)',
+      desc: 'Red team breeds new attack payloads from the archive’s fittest niches.',
+    },
+    {
+      n: '2', label: 'Simulate', color: 'var(--ink-2)', wash: 'var(--sunk)',
+      desc: 'The Qwen3-8B target agent handles the payload live, as it would in production.',
+    },
+    {
+      n: '3', label: 'Detect', color: 'var(--blue)', wash: 'var(--blue-wash)',
+      desc: 'Three deterministic tiers fuse into one score — content rules, a provenance graph, then a delegated-scope check.',
+    },
+    {
+      n: '4', label: 'Judge', color: 'var(--amber)', wash: 'var(--amber-wash)',
+      desc: 'Ground truth is checked: did the payment actually move to the attacker?',
+    },
+    {
+      n: '5', label: 'Retrain', color: 'var(--blue)', wash: 'var(--blue-wash)',
+      desc: 'Blue team retrains on every payload that beat it — today’s win is tomorrow’s hard negative.',
+    },
   ]
   return (
-    <div className="flex items-stretch gap-0 overflow-x-auto">
-      {stages.map((s, i) => (
-        <div key={s.n} className="flex items-center">
-          <div className="rounded-lg border px-4 py-3 min-w-[128px]" style={{ borderColor: 'var(--rule)' }}>
-            <div className="text-[length:var(--text-xs)] font-semibold" style={{ color: s.color }}>{s.n} &middot; {s.label}</div>
-            <div className="font-mono text-[length:var(--text-2xs)] mt-1" style={{ color: 'var(--muted)' }}>{s.sub}</div>
+    <div>
+      <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0,1fr))` }}>
+        {stages.map((s, i) => (
+          <div key={s.n} className="flex items-stretch min-w-0">
+            <div
+              className="rounded-xl border px-4.5 py-4 flex-1 min-w-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              style={{ borderColor: 'var(--rule)', background: 'var(--surface)', boxShadow: 'var(--shadow-sm)' }}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="flex items-center justify-center w-6 h-6 rounded-full text-[length:var(--text-xs)] font-bold shrink-0"
+                  style={{ background: s.wash, color: s.color }}
+                >
+                  {s.n}
+                </span>
+                <span className="text-[length:var(--text-md)] font-bold" style={{ color: s.color }}>{s.label}</span>
+              </div>
+              <p className="text-[length:var(--text-xs)] leading-relaxed" style={{ color: 'var(--muted)' }}>{s.desc}</p>
+            </div>
+            {i < stages.length - 1 && (
+              <div className="flex items-center justify-center w-8 shrink-0">
+                <svg width="24" height="20" aria-hidden="true">
+                  <line
+                    x1="2" y1="10" x2="20" y2="10"
+                    stroke={stages[i + 1].color} strokeOpacity="0.6" strokeWidth="2"
+                    strokeDasharray="1 5" strokeLinecap="round"
+                    className="flow-line" markerEnd="url(#pi-ar)"
+                  />
+                  <defs>
+                    <marker id="pi-ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                      <path d="M0 0 L10 5 L0 10 z" fill={stages[i + 1].color} opacity="0.6" />
+                    </marker>
+                  </defs>
+                </svg>
+              </div>
+            )}
           </div>
-          {i < stages.length - 1 && (
-            <svg width="28" height="20" className="shrink-0" aria-hidden="true">
-              <line x1="2" y1="10" x2="24" y2="10" stroke="var(--ink-2)" strokeWidth="1.6" markerEnd="url(#pi-ar)" />
-              <defs>
-                <marker id="pi-ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-                  <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-2)" />
-                </marker>
-              </defs>
-            </svg>
-          )}
-        </div>
-      ))}
-      <div className="flex items-center pl-3 ml-2 border-l" style={{ borderColor: 'var(--rule-soft)' }}>
-        <div className="text-[length:var(--text-2xs)] leading-snug" style={{ color: 'var(--muted)' }}>
-          feedback: detectors retrain on<br />
-          <span className="font-mono font-semibold" style={{ color: 'var(--blue)' }}>{archiveSize}/{totalCells}</span> claimed niches
-        </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2.5 mt-3 pt-3 border-t" style={{ borderColor: 'var(--rule-soft)' }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 spin-slow">
+          <path d="M23 4v6h-6" />
+          <path d="M1 20v-6h6" />
+          <path d="M3.51 9a9 9 0 0114.13-3.36L23 10M1 14l5.36 4.36A9 9 0 0020.49 15" />
+        </svg>
+        <p className="text-[length:var(--text-xs)] leading-relaxed" style={{ color: 'var(--muted)' }}>
+          Stage 5 loops back into Stage 1 — the retrained defense faces the next round’s mutations. So far it has claimed{' '}
+          <span className="font-mono font-semibold" style={{ color: 'var(--blue)' }}>{archiveSize}/{totalCells}</span> niches in the archive.
+        </p>
       </div>
     </div>
   )

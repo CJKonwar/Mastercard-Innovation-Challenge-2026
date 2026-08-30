@@ -14,6 +14,31 @@ from dataclasses import dataclass, field
 from .vectors import REPO_ROOT, VECTORS
 
 
+def _iter_terminal_lines(stream):
+    """Yield segments split on \\r as well as \\n.
+
+    The CLI's own progress ticks (coevolve.py's _tick()) write a bare \\r to
+    overwrite the current line in place, the same trick a real terminal uses
+    for a live-updating counter - they only get a trailing \\n on the very
+    last tick of a batch. Iterating a text stream the normal way (splitting
+    on \\n only) buffers every \\r-terminated update invisibly until the next
+    real newline, which is why the log looked stuck instead of progressing:
+    it wasn't stuck, the reader just wasn't watching for the right byte."""
+    buf = ""
+    while True:
+        ch = stream.read(1)
+        if ch == "":
+            break
+        if ch in ("\r", "\n"):
+            if buf.strip():
+                yield buf.rstrip()
+            buf = ""
+        else:
+            buf += ch
+    if buf.strip():
+        yield buf.rstrip()
+
+
 @dataclass
 class Job:
     id: str
@@ -63,9 +88,9 @@ class JobManager:
             with self._lock:
                 job.process = proc
             assert proc.stdout is not None
-            for line in proc.stdout:
+            for line in _iter_terminal_lines(proc.stdout):
                 with self._lock:
-                    job.log.append(line.rstrip("\n"))
+                    job.log.append(line)
             proc.wait()
             with self._lock:
                 if job.stop_requested:

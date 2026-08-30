@@ -1,34 +1,35 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Panel, StatusPill } from './ui'
+import TerminalLog from './TerminalLog'
 import { useJob } from '../lib/useJob'
+import type { Accent } from '../data'
 
 export type RunField =
   | { key: string; kind: 'number'; label: string; defaultValue: number; min: number; max: number; help?: string }
   | { key: string; kind: 'checkbox'; label: string; defaultValue: boolean; help?: string }
 
 export default function RunPanel({
-  vector, title, fields, onDone, note,
+  vector, title, fields, onDone, note, accent = 'ink',
 }: {
   vector: string
   title: string
   fields: RunField[]
   onDone: () => void
   note?: string
+  accent?: Accent | 'ink'
 }) {
+  const buttonColor = accent === 'ink' ? 'var(--ink)' : `var(--${accent})`
   const { job, run, stop, starting, stopping, error, isRunning } = useJob(vector, onDone)
   const [values, setValues] = useState<Record<string, number | boolean>>(() =>
     Object.fromEntries(fields.map((f) => [f.key, f.defaultValue])),
   )
-  const logRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
-  }, [job?.log])
 
   const set = (key: string, v: number | boolean) => setValues((s) => ({ ...s, [key]: v }))
 
+  const hasEmptyNumber = fields.some((f) => f.kind === 'number' && !(values[f.key] as number))
+
   return (
-    <Panel title={title} note={note}>
+    <Panel title={title} note={note} accent={accent}>
       <div className="flex flex-wrap items-end gap-3.5">
         {fields.map((f) => (
           <label key={f.key} className="flex flex-col gap-1 text-[length:var(--text-sm)]" style={{ color: 'var(--ink-2)' }}>
@@ -38,9 +39,19 @@ export default function RunPanel({
                 type="number"
                 min={f.min}
                 max={f.max}
-                value={values[f.key] as number}
+                value={values[f.key] as number === 0 ? '' : (values[f.key] as number)}
                 disabled={isRunning}
-                onChange={(e) => set(f.key, Math.min(f.max, Math.max(f.min, +e.target.value || f.min)))}
+                onChange={(e) => {
+                  const raw = e.target.value
+                  if (raw === '') { set(f.key, 0); return }
+                  const n = +raw
+                  if (Number.isNaN(n)) return
+                  set(f.key, Math.min(f.max, Math.max(0, n)))
+                }}
+                onBlur={(e) => {
+                  const n = +e.target.value || 0
+                  if (n < f.min) set(f.key, f.min)
+                }}
                 className="w-24 rounded-md border px-2.5 py-1.5 text-[length:var(--text-base)] font-mono outline-none disabled:opacity-50"
                 style={{ background: 'var(--surface)', borderColor: 'var(--rule)', color: 'var(--ink)' }}
               />
@@ -60,9 +71,9 @@ export default function RunPanel({
         ))}
         <button
           onClick={() => run(values)}
-          disabled={isRunning || starting}
+          disabled={isRunning || starting || hasEmptyNumber}
           className="rounded-md px-4 py-2 text-[length:var(--text-sm)] font-semibold text-white transition-opacity disabled:opacity-50"
-          style={{ background: 'var(--ink)' }}
+          style={{ background: buttonColor }}
         >
           {isRunning ? 'Running…' : starting ? 'Starting…' : 'Start run'}
         </button>
@@ -93,23 +104,7 @@ export default function RunPanel({
       )}
 
       {job && (
-        <div
-          ref={logRef}
-          className="mt-3 rounded-lg border p-3 font-mono text-[length:var(--text-2xs)] leading-relaxed overflow-y-auto whitespace-pre-wrap"
-          style={{ borderColor: 'var(--rule-soft)', background: 'var(--sunk)', color: 'var(--ink-2)', maxHeight: 220 }}
-        >
-          {job.log || 'waiting for output…'}
-          {job.status === 'failed' && (
-            <div className="mt-1 font-semibold" style={{ color: 'var(--red)' }}>
-              exited with code {job.returncode}
-            </div>
-          )}
-          {job.status === 'stopped' && (
-            <div className="mt-1 font-semibold" style={{ color: 'var(--amber)' }}>
-              stopped by user
-            </div>
-          )}
-        </div>
+        <TerminalLog command={job.command} log={job.log} isRunning={isRunning} status={job.status} />
       )}
     </Panel>
   )

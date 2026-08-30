@@ -122,6 +122,39 @@ class LLMRedTeamController:
                     overrides['mule_age_range'] = (15, 90)
                     strategy_points.append("→ Action: Use fresh accounts (15-90 days) — old accounts are being flagged.")
 
+        if 'amount' in blind_spots:
+            info = blind_spots['amount']
+            if isinstance(info, dict) and 'direction' in info:
+                if info['direction'] == 'increase':
+                    overrides['amount_mean'] = random.uniform(35000, 50000)
+                    strategy_points.append("→ Action: Increase transaction amounts to mimic high-value legitimate transfers.")
+                else:
+                    overrides['amount_mean'] = random.uniform(5000, 15000)
+                    strategy_points.append("→ Action: Decrease transaction amounts to stay under the radar.")
+
+        if 'dwell_time_seconds' in blind_spots:
+            info = blind_spots['dwell_time_seconds']
+            if isinstance(info, dict) and 'direction' in info:
+                if info['direction'] == 'increase':
+                    overrides['dwell_range'] = (3600, 86400)  # 1 hour to 24 hours
+                    strategy_points.append("→ Action: Increase dwell time to mimic slow legitimate account activity.")
+                else:
+                    overrides['dwell_range'] = (15, 60)  # fast
+                    strategy_points.append("→ Action: Decrease dwell time for rapid money movement before detection.")
+
+        if 'is_structured' in blind_spots:
+            info = blind_spots['is_structured']
+            if isinstance(info, dict) and 'direction' in info:
+                if info['direction'] == 'decrease':
+                    overrides['amount_mean'] = random.choice([
+                        random.uniform(3000, 7000),
+                        random.uniform(12000, 25000),
+                    ])
+                    strategy_points.append("→ Action: Avoid structuring range (₹8.5K-10K) — Blue Team flags structured transactions.")
+                else:
+                    overrides['amount_mean'] = random.uniform(8500, 10000)
+                    strategy_points.append("→ Action: Deliberately use structuring range to blend with legitimate structured payments.")
+
         if not strategy_points:
             strategy_points.append("General evasion mode: randomizing all parameters.")
             overrides['amount_mean'] = random.uniform(15000, 30000)

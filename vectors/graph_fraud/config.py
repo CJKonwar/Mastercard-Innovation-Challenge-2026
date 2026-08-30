@@ -34,7 +34,6 @@ NUM_HEADS: int = 4
 NUM_LAYERS: int = 2
 LR: float = 0.01
 WEIGHT_DECAY: float = 5e-4
-EPOCHS_PER_LOOP: int = 250  # GNN training epochs per adversarial loop
 FOCAL_GAMMA: float = 2.0
 NODE_WEIGHT_CAP: float = 5.0
 EDGE_WEIGHT_CAP: float = 10.0

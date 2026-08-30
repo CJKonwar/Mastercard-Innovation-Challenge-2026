@@ -27,6 +27,11 @@ export function useResults() {
 
   useEffect(() => {
     refetch()
+    // Background poll so results also pick up runs started outside the web
+    // UI (e.g. `python main.py` in a terminal) - those never fire a job's
+    // onDone callback, so without this the page would need a manual reload.
+    const id = setInterval(refetch, 15000)
+    return () => clearInterval(id)
   }, [refetch])
 
   return { ...state, refetch }

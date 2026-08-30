@@ -43,9 +43,8 @@ def train_blue_team_on_epoch(gnn_data):
     )
 
     model = train_model(
-        model=model, 
-        data=data, 
-        epochs=config.EPOCHS_PER_LOOP, 
+        model=model,
+        data=data,
         lr=config.LR,
         weight_decay=config.WEIGHT_DECAY,
         node_weight_cap=config.NODE_WEIGHT_CAP,

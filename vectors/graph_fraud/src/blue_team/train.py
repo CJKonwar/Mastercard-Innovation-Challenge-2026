@@ -31,14 +31,26 @@ class FocalLoss(nn.Module):
         loss = focal_term * ce_loss
         return loss.mean()
 
-def train_model(model: nn.Module, data: HeteroData, epochs: int = 120, 
+def train_model(model: nn.Module, data: HeteroData, epochs: int = None,
                 lr: float = 0.01, weight_decay: float = 5e-4,
-                node_weight_cap: float = 5.0, edge_weight_cap: float = 10.0, 
+                node_weight_cap: float = 5.0, edge_weight_cap: float = 10.0,
                 focal_gamma: float = 2.0) -> nn.Module:
     """
     Trains the DualHeadHGTDetector using Focal Loss and Early Stopping.
     """
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    # Scale inner epochs with graph size for better Edge Head convergence
+    transfer_edge = ('account', 'transfer', 'account')
+    if epochs is None:
+        n_edges = data[transfer_edge].edge_index.shape[1] if transfer_edge in data.edge_index_dict else data.edge_index.shape[1]
+        if n_edges < 10000:
+            epochs = 120
+        elif n_edges < 30000:
+            epochs = 150
+        else:
+            epochs = 180
+        logger.info(f"   \U0001f4d0 Auto-scaled inner epochs to {epochs} (graph has {n_edges} edges)")
 
     # ─── Node Class Weights ───
     train_mask = data['account'].train_mask
@@ -49,7 +61,6 @@ def train_model(model: nn.Module, data: HeteroData, epochs: int = 120,
     node_weights = torch.FloatTensor([1.0, min(node_weight_cap, raw_node_ratio)])
 
     # ─── Edge Class Weights ───
-    transfer_edge = ('account', 'transfer', 'account')
     e_train_mask = data[transfer_edge].train_mask
     e_labels = data[transfer_edge].edge_y
     n_legit_edges = (e_labels[e_train_mask] == 0).sum().item()

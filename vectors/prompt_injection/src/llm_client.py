@@ -3,6 +3,7 @@ the attacker. Raises on failure; no silent fallback between providers."""
 from __future__ import annotations
 import os
 import random
+import sys
 import time
 from pathlib import Path
 import ollama
@@ -38,6 +39,48 @@ _exhausted_keys: set[int] = set()
 GEMINI_MIN_INTERVAL = float(os.getenv("ADL_GEMINI_MIN_INTERVAL", "6.5"))
 _last_gemini_call = 0.0
 
+# Thinking mode spends tokens reasoning before it ever writes the actual
+# answer. If num_predict only covers the answer, a long enough thinking pass
+# eats the whole budget and the answer comes back empty or cut off mid-JSON -
+# the same truncation Gemini hit before its thinking was disabled. This adds
+# headroom on top of whatever the caller asked for, so callers can keep
+# thinking in max_tokens as "budget for the answer" and not worry about it.
+OLLAMA_THINK_BUDGET = 1024
+
+
+def _ollama_chat(model: str, system: str, user: str, temperature: float,
+                 max_tokens: int, repeat_penalty: float,
+                 format_: str | dict | None) -> str:
+    """One ollama chat call in thinking mode.
+
+    Fixed headroom isn't a guarantee: a hard enough prompt can still spend the
+    whole num_predict budget reasoning and never write an answer, coming back
+    with empty content (json.loads on that raises "Expecting value" - the
+    same truncation Gemini hit before its thinking was disabled). If that
+    happens, retry once with thinking off so num_predict goes entirely to the
+    answer instead of failing the caller outright."""
+    client = ollama.Client()
+
+    def _call(think: bool, num_predict: int) -> str:
+        kwargs = dict(
+            model=model,
+            messages=[{"role": "system", "content": system},
+                      {"role": "user", "content": user}],
+            think=think,
+            options={"temperature": temperature, "num_predict": num_predict,
+                    "repeat_penalty": repeat_penalty})
+        if format_ is not None:
+            kwargs["format"] = format_
+        resp = client.chat(**kwargs)
+        return resp["message"]["content"]
+
+    content = _call(think=True, num_predict=max_tokens + OLLAMA_THINK_BUDGET)
+    if content.strip():
+        return content
+    print(f"llm_client: {model} spent its whole budget thinking and returned "
+          f"no answer - retrying once with thinking off", file=sys.stderr)
+    return _call(think=False, num_predict=max_tokens)
+
 
 def generate_json(system: str, user: str, schema: dict | None = None,
                   model: str | None = None, temperature: float = 0.7,
@@ -46,16 +89,8 @@ def generate_json(system: str, user: str, schema: dict | None = None,
     model = model or DEFAULT_MODEL
     if model.startswith("gemini"):
         return _gemini_generate(system, user, model, temperature, max_tokens, schema)
-    client = ollama.Client()
-    resp = client.chat(
-        model=model,
-        messages=[{"role": "system", "content": system},
-                  {"role": "user", "content": user}],
-        format=schema if schema is not None else "json",
-        think=False,
-        options={"temperature": temperature, "num_predict": max_tokens,
-                "repeat_penalty": repeat_penalty})
-    return resp["message"]["content"]
+    return _ollama_chat(model, system, user, temperature, max_tokens, repeat_penalty,
+                        schema if schema is not None else "json")
 
 
 def generate_text(system: str, user: str, model: str | None = None,
@@ -65,15 +100,7 @@ def generate_text(system: str, user: str, model: str | None = None,
     model = model or DEFAULT_MODEL
     if model.startswith("gemini"):
         return _gemini_generate(system, user, model, temperature, max_tokens, None)
-    client = ollama.Client()
-    resp = client.chat(
-        model=model,
-        messages=[{"role": "system", "content": system},
-                  {"role": "user", "content": user}],
-        think=False,
-        options={"temperature": temperature, "num_predict": max_tokens,
-                "repeat_penalty": repeat_penalty})
-    return resp["message"]["content"]
+    return _ollama_chat(model, system, user, temperature, max_tokens, repeat_penalty, None)
 
 
 def _gemini_generate(system: str, user: str, model: str, temperature: float,
