@@ -25,7 +25,10 @@ Run: python evaluate_pipeline.py
 """
 
 import csv
+import json
+import os
 from collections import Counter
+from datetime import datetime
 
 import numpy as np
 from sklearn.metrics import (
@@ -34,6 +37,8 @@ from sklearn.metrics import (
 
 from deterministic_verifier import NonceRegistry, verify_event
 from train_layer2 import train_and_evaluate, DATA_PATH
+
+RESULTS_PATH = os.path.join(os.path.dirname(__file__), "..", "outputs", "results.json")
 
 
 def load_rows(path):
@@ -150,6 +155,49 @@ def main():
             else:
                 c["missed_by_both"] += 1
         print(f"  {lbl}: {dict(c)}  (n={n})")
+
+    save_results(y_true, combined_pred, combined_proba, label, l1_reject, layer2_pred, tn, fp, fn, tp)
+
+
+def save_results(y_true, combined_pred, combined_proba, label, l1_reject, layer2_pred, tn, fp, fn, tp):
+    """Persist the same numbers just printed, so a caller doesn't have to
+    scrape stdout to know what a run produced."""
+    subclasses = []
+    for lbl in ["T1", "T2", "T3", "T4"]:
+        mask = label == lbl
+        n = int(mask.sum())
+        if n == 0:
+            continue
+        l1_recall = float(l1_reject[mask].mean())
+        subclasses.append({
+            "label": lbl,
+            "n": n,
+            "layer1": l1_recall,
+            "layer2": None if l1_recall == 1.0 else float(layer2_pred[mask].mean()),
+            "combined": float(combined_pred[mask].mean()),
+        })
+
+    try:
+        auc = float(roc_auc_score(y_true, combined_proba))
+    except ValueError:
+        auc = None
+
+    out = {
+        "timestamp": datetime.now().isoformat(),
+        "testSetSize": int(len(y_true)),
+        "fraudCount": int(y_true.sum()),
+        "legitimateCount": int(len(y_true) - y_true.sum()),
+        "precision": float(precision_score(y_true, combined_pred, zero_division=0)),
+        "recall": float(recall_score(y_true, combined_pred, zero_division=0)),
+        "f1": float(f1_score(y_true, combined_pred, zero_division=0)),
+        "auc": auc,
+        "confusion": {"tn": int(tn), "fp": int(fp), "fn": int(fn), "tp": int(tp)},
+        "subclasses": subclasses,
+    }
+    os.makedirs(os.path.dirname(RESULTS_PATH), exist_ok=True)
+    with open(RESULTS_PATH, "w") as f:
+        json.dump(out, f, indent=2)
+    print(f"\nResults saved -> {os.path.abspath(RESULTS_PATH)}")
 
 
 if __name__ == "__main__":

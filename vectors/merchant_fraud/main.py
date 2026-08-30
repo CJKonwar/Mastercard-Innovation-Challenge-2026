@@ -1,3 +1,4 @@
+import argparse
 import json
 import random
 from datetime import datetime
@@ -539,16 +540,11 @@ def run_attack(
 
 if __name__ == "__main__":
 
-    # --------------------------------------------------------
-    # Change this number whenever you want.
-    #
-    # Examples:
-    #
-    # run_attack(num_samples=100)
-    # run_attack(num_samples=500)
-    # run_attack(num_samples=1000)
-    # --------------------------------------------------------
+    parser = argparse.ArgumentParser(description="Run the merchant fraud CTGAN attack simulation.")
+    parser.add_argument("--samples", type=int, default=5000,
+                        help="Target number of valid synthetic fraud candidates (default: 5000).")
+    args = parser.parse_args()
 
     run_attack(
-        num_samples=5000
+        num_samples=args.samples
     )

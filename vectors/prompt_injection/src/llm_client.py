@@ -14,10 +14,26 @@ except Exception:
     pass
 
 DEFAULT_MODEL = os.getenv("ADL_LOCAL_MODEL", "qwen3:8b")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Free-tier gemini-2.5-flash is capped at 10 requests/minute. Spacing calls at
-# this floor keeps a coevolution run under the limit on its own, instead of
+
+def _load_gemini_keys() -> list[str]:
+    """GEMINI_API_KEY, then GEMINI_API_KEY_2, _3, ... until one is unset."""
+    keys = []
+    primary = os.getenv("GEMINI_API_KEY")
+    if primary:
+        keys.append(primary)
+    i = 2
+    while (k := os.getenv(f"GEMINI_API_KEY_{i}")):
+        keys.append(k)
+        i += 1
+    return keys
+
+
+GEMINI_API_KEYS = _load_gemini_keys()
+_exhausted_keys: set[int] = set()
+
+# Free-tier gemini-2.5-flash is capped at 10 requests/minute per key. Spacing
+# calls at this floor keeps a run under the limit on its own, instead of
 # relying on retry/backoff to absorb 429s after the fact.
 GEMINI_MIN_INTERVAL = float(os.getenv("ADL_GEMINI_MIN_INTERVAL", "6.5"))
 _last_gemini_call = 0.0
@@ -63,21 +79,20 @@ def generate_text(system: str, user: str, model: str | None = None,
 def _gemini_generate(system: str, user: str, model: str, temperature: float,
                      max_tokens: int, schema: dict | None,
                      max_retries: int = 5) -> str:
-    """One Gemini completion. Retries on 429s with exponential backoff since
-    the free tier is rate-limited; anything else raises immediately."""
-    if not GEMINI_API_KEY:
+    """One Gemini completion, tried across every configured key in turn.
+
+    A 429 marks that key exhausted for the rest of this process and moves to
+    the next one immediately - backing off and retrying the same key wastes
+    time when the quota is a daily cap, not a transient minute-window limit.
+    Non-429 errors still get the backoff retries, since those genuinely can
+    be transient. Raises only once every key has failed."""
+    if not GEMINI_API_KEYS:
         raise RuntimeError("GEMINI_API_KEY not set - add it to "
                            "vectors/prompt_injection/.env")
     from google import genai
     from google.genai import errors, types
 
     global _last_gemini_call
-    wait = GEMINI_MIN_INTERVAL - (time.monotonic() - _last_gemini_call)
-    if wait > 0:
-        time.sleep(wait)
-    _last_gemini_call = time.monotonic()
-
-    client = genai.Client(api_key=GEMINI_API_KEY)
     config_kwargs = {"system_instruction": system, "temperature": temperature,
                      "max_output_tokens": max_tokens,
                      "thinking_config": types.ThinkingConfig(thinking_budget=0)}
@@ -86,15 +101,31 @@ def _gemini_generate(system: str, user: str, model: str, temperature: float,
         config_kwargs["response_json_schema"] = schema
     config = types.GenerateContentConfig(**config_kwargs)
 
-    delay = 2.0
-    for attempt in range(max_retries + 1):
-        try:
-            resp = client.models.generate_content(model=model, contents=user,
-                                                   config=config)
-            return resp.text
-        except errors.APIError as e:
-            if e.code != 429 or attempt == max_retries:
-                raise
-            wait = min(delay * (2 ** attempt) + random.uniform(0, 1), 60)
-            time.sleep(wait)
-    raise RuntimeError("unreachable")  # pragma: no cover
+    last_error: Exception | None = None
+    for idx, api_key in enumerate(GEMINI_API_KEYS):
+        if idx in _exhausted_keys:
+            continue
+        client = genai.Client(api_key=api_key)
+        delay = 2.0
+        for attempt in range(max_retries + 1):
+            wait = GEMINI_MIN_INTERVAL - (time.monotonic() - _last_gemini_call)
+            if wait > 0:
+                time.sleep(wait)
+            _last_gemini_call = time.monotonic()
+            try:
+                resp = client.models.generate_content(model=model, contents=user,
+                                                       config=config)
+                return resp.text
+            except errors.APIError as e:
+                last_error = e
+                if e.code == 429:
+                    _exhausted_keys.add(idx)
+                    break
+                if attempt == max_retries:
+                    break
+                wait = min(delay * (2 ** attempt) + random.uniform(0, 1), 60)
+                time.sleep(wait)
+
+    raise RuntimeError(
+        f"all {len(GEMINI_API_KEYS)} Gemini API key(s) failed - "
+        f"last error: {last_error}") from last_error

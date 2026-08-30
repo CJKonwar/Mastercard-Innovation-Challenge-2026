@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-08-30T11:06:30.767543",
+  "testSetSize": 8325,
+  "fraudCount": 525,
+  "legitimateCount": 7800,
+  "precision": 0.9980988593155894,
+  "recall": 1.0,
+  "f1": 0.9990485252140818,
+  "auc": 1.0,
+  "confusion": {
+    "tn": 7799,
+    "fp": 1,
+    "fn": 0,
+    "tp": 525
+  },
+  "subclasses": [
+    {
+      "label": "T1",
+      "n": 184,
+      "layer1": 1.0,
+      "layer2": null,
+      "combined": 1.0
+    },
+    {
+      "label": "T2",
+      "n": 157,
+      "layer1": 1.0,
+      "layer2": null,
+      "combined": 1.0
+    },
+    {
+      "label": "T3",
+      "n": 105,
+      "layer1": 0.0,
+      "layer2": 1.0,
+      "combined": 1.0
+    },
+    {
+      "label": "T4",
+      "n": 79,
+      "layer1": 0.0,
+      "layer2": 1.0,
+      "combined": 1.0
+    }
+  ]
+}

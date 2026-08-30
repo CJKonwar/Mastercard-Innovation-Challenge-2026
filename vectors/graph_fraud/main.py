@@ -6,6 +6,7 @@ Red Team generates progressively harder attacks → Blue Team learns →
 SmartEvolution finds blind spots → Red Team adapts → Repeat.
 """
 
+import argparse
 import logging
 import json
 import torch
@@ -285,4 +286,10 @@ def run_adversarial_loop():
     return all_metrics
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run the graph fraud adversarial training loop.")
+    parser.add_argument("--epochs", type=int, default=config.NUM_EPOCHS,
+                        help=f"Number of adversarial epochs (default: {config.NUM_EPOCHS}).")
+    args = parser.parse_args()
+    config.NUM_EPOCHS = args.epochs
+
     run_adversarial_loop()
