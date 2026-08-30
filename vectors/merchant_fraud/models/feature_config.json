@@ -1,0 +1,30 @@
+{
+  "FEATURES": [
+    "owner_age",
+    "claimed_revenue_decile",
+    "business_credit_score",
+    "name_email_similarity",
+    "business_address_tenure_months",
+    "shared_device_registration_count",
+    "onboarding_doc_velocity_6h",
+    "onboarding_doc_velocity_24h",
+    "onboarding_doc_velocity_4w",
+    "cross_border_registration",
+    "requested_processing_limit",
+    "onboarding_duration_days",
+    "uses_free_email_domain",
+    "txn_count_90d",
+    "avg_txn_amount",
+    "unique_cardholder_count",
+    "repeat_customer_ratio",
+    "mcc_amount_zscore",
+    "txn_volume_trend_slope",
+    "large_txn_spike_ratio",
+    "refund_ratio",
+    "chargeback_velocity_trend"
+  ],
+  "DISCRETE_COLUMNS": [
+    "cross_border_registration",
+    "uses_free_email_domain"
+  ]
+}
