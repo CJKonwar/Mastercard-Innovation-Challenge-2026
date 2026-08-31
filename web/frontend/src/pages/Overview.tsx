@@ -138,16 +138,7 @@ export default function Overview() {
 
       <div className="grid gap-4" style={{ gridTemplateColumns: '1.1fr 1fr' }}>
         <Panel title="The convergent idea" note="why these four are one system">
-          <p className="text-[length:var(--text-sm)] leading-relaxed" style={{ color: 'var(--ink-2)' }}>
-            Built independently by different team members, against different data and different threat
-            models, all four detectors arrive at the same underlying move: stop scoring what an action{' '}
-            <em>looks like</em> and start scoring where it <em>came from</em>. A payment argument traced
-            back to untrusted text (Prompt Injection), a token judged by the cryptographic context it was
-            scoped for (Token Replay), a device-sharing pattern read as a graph topology rather than a
-            scalar count (Graph Fraud), and a classifier's own decision boundary hardened directly rather
-            than diluted with more average examples (Merchant Fraud) — provenance over pattern-matching,
-            discovered convergently four separate times.
-          </p>
+          <ConvergentIdea />
         </Panel>
         <Panel title="Headline metrics" note="one number per vector, live from disk">
           {pi || tr || mf || gf ? (
@@ -167,12 +158,6 @@ export default function Overview() {
           )}
         </Panel>
       </div>
-
-      <p className="text-[length:var(--text-xs)] leading-relaxed" style={{ color: 'var(--muted)' }}>
-        A fifth vector — deepfake-enabled identity &amp; authentication spoofing, cross-cutting onboarding,
-        consent, and step-up authentication — is in active development and not yet represented here.
-        Sandboxed simulation throughout: no real payment rails, no live cards, no customer data.
-      </p>
 
       {zoomedSlug && (
         <ArchZoomModal
@@ -215,6 +200,63 @@ function ArchZoomModal({ info, onClose }: { info: VectorArchInfo; onClose: () =>
           <img src={ARCH_DIAGRAM[info.slug]} alt={`${info.name} architecture diagram, full size`} className="block" style={{ maxWidth: '100%' }} />
         </div>
       </div>
+    </div>
+  )
+}
+
+const CONVERGENT_POINTS: { slug: string; name: string; accent: Accent; insight: string }[] = [
+  { slug: 'prompt-injection', name: 'Prompt Injection', accent: 'red', insight: 'A payment argument traced back to the untrusted text it actually came from.' },
+  { slug: 'token-replay', name: 'Token Replay', accent: 'blue', insight: 'A token judged by the cryptographic context it was scoped for, not the traffic around it.' },
+  { slug: 'graph-fraud', name: 'Graph Fraud', accent: 'violet', insight: 'A device-sharing pattern read as a graph topology, not shrunk into a scalar count.' },
+  { slug: 'merchant-fraud', name: 'Merchant Fraud', accent: 'amber', insight: "A classifier's own decision boundary hardened directly, not diluted with more average examples." },
+]
+
+function ConvergentIdea() {
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-[length:var(--text-sm)] leading-relaxed" style={{ color: 'var(--ink-2)' }}>
+        Built independently by different team members, against different data and different threat models,
+        all four detectors arrive at the same underlying move: stop scoring what an action{' '}
+        <em style={{ color: 'var(--ink)' }}>looks like</em> and start scoring where it{' '}
+        <em style={{ color: 'var(--ink)' }}>came from</em>.
+      </p>
+
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(2, minmax(0,1fr))' }}>
+        {CONVERGENT_POINTS.map((p) => {
+          const color = `var(--${p.accent})`
+          const wash = `var(--${p.accent}-wash)`
+          return (
+            <Link
+              key={p.slug}
+              to={`/${p.slug}`}
+              className="group relative overflow-hidden flex gap-3 rounded-xl border p-3.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              style={{ borderColor: 'var(--rule)', background: 'var(--surface-2)' }}
+            >
+              <span className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full" style={{ background: color }} />
+              <span className="flex items-center justify-center w-8 h-8 rounded-full shrink-0" style={{ background: wash }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                </svg>
+              </span>
+              <div className="min-w-0">
+                <div className="text-[length:var(--text-xs)] font-bold" style={{ color }}>{p.name}</div>
+                <p className="text-[length:var(--text-xs)] leading-relaxed mt-0.5" style={{ color: 'var(--ink-2)' }}>{p.insight}</p>
+              </div>
+              <span
+                className="ml-auto self-center shrink-0 text-[length:var(--text-sm)] font-bold opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0"
+                style={{ color }}
+              >
+                →
+              </span>
+            </Link>
+          )
+        })}
+      </div>
+
+      <p className="text-[length:var(--text-sm)] font-bold" style={{ color: 'var(--ink)' }}>
+        Provenance over pattern matching discovered convergently, four separate times.
+      </p>
     </div>
   )
 }

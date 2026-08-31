@@ -213,7 +213,7 @@ class TargetAgent:
 
         try:
             raw = generate_json(AGENT_SYS, user_content, schema=AGENT_SCHEMA,
-                               model=self.model, max_tokens=800)
+                               model=self.model, max_tokens=800, think=False)
         except Exception as e:
             raise AgentUnavailableError(
                 f"local model backend unreachable or model not pulled ({e}) - "

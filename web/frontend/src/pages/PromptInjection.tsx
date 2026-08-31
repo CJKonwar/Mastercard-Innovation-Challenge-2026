@@ -96,7 +96,6 @@ function Dashboard({ pi }: { pi: PromptInjectionData }) {
 
       <Panel
         title="Try an attack configuration"
-        note="real archive data — every result below actually ran against the target agent"
         accent="red"
       >
         <div className="flex flex-wrap gap-3 mb-4">
@@ -138,7 +137,7 @@ function Dashboard({ pi }: { pi: PromptInjectionData }) {
         <Panel title="Technique distribution" note={`${pi.archiveSize} elites`} accent="red">
           <BreakdownBars counts={pi.techniqueCounts} labelMap={TECHNIQUE_LABEL} total={pi.archiveSize} />
         </Panel>
-        <Panel title="Top elites by fitness" note="highest-reward payloads this archive" accent="red">
+        <Panel title="Top elites by fitness" note="highest reward payloads this archive" accent="red">
           <div className="flex flex-col max-h-[280px] overflow-y-auto">
             {pi.sampleElites.slice(0, 8).map((e, i) => (
               <div key={i} className="grid gap-2 items-center py-1.75 border-b font-mono text-[length:var(--text-xs)]" style={{ borderColor: 'var(--rule-soft)', gridTemplateColumns: '44px 1fr auto' }}>

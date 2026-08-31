@@ -22,7 +22,6 @@ export default function GraphFraud() {
       <RunPanel
         vector="graph-fraud"
         title="Run the adversarial loop"
-        note="local strategist (mock mode) — no Gemini quota used, per the run this repo reports"
         accent="violet"
         onDone={refetch}
         fields={[
@@ -113,7 +112,7 @@ function Dashboard({ gf }: { gf: GraphFraudData }) {
         </div>
       </Panel>
 
-      <Panel title="The FPR guardrail" note="the false-positive rate is not a passive metric — it drives its own correction" accent="violet">
+      <Panel title="The FPR guardrail" note="the false-positive rate is not a passive metric, it drives its own correction" accent="violet">
         <FprChart epochs={gf.epochs} />
         <p className="text-[length:var(--text-xs)] mt-3" style={{ color: 'var(--ink-2)' }}>
           When Node FPR exceeds the 5% industry-tolerable ceiling, the system boosts next-epoch legitimate

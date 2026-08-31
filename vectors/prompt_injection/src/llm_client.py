@@ -50,15 +50,21 @@ OLLAMA_THINK_BUDGET = 1024
 
 def _ollama_chat(model: str, system: str, user: str, temperature: float,
                  max_tokens: int, repeat_penalty: float,
-                 format_: str | dict | None) -> str:
-    """One ollama chat call in thinking mode.
+                 format_: str | dict | None, think: bool = True) -> str:
+    """One ollama chat call.
 
-    Fixed headroom isn't a guarantee: a hard enough prompt can still spend the
-    whole num_predict budget reasoning and never write an answer, coming back
-    with empty content (json.loads on that raises "Expecting value" - the
-    same truncation Gemini hit before its thinking was disabled). If that
-    happens, retry once with thinking off so num_predict goes entirely to the
-    answer instead of failing the caller outright."""
+    think=True: fixed headroom isn't a guarantee - a hard enough prompt can
+    still spend the whole num_predict budget reasoning and never write an
+    answer, coming back with empty content (json.loads on that raises
+    "Expecting value" - the same truncation Gemini hit before its thinking
+    was disabled). If that happens, retry once with thinking off so
+    num_predict goes entirely to the answer instead of failing the caller
+    outright.
+
+    think=False: skip thinking entirely - for schema-constrained, mechanical
+    completions (e.g. the target agent's tool-call plan) that don't need
+    reasoning, where thinking mode was only adding latency and occasionally
+    triggering the retry above."""
     client = ollama.Client()
 
     def _call(think: bool, num_predict: int) -> str:
@@ -74,6 +80,9 @@ def _ollama_chat(model: str, system: str, user: str, temperature: float,
         resp = client.chat(**kwargs)
         return resp["message"]["content"]
 
+    if not think:
+        return _call(think=False, num_predict=max_tokens)
+
     content = _call(think=True, num_predict=max_tokens + OLLAMA_THINK_BUDGET)
     if content.strip():
         return content
@@ -84,23 +93,24 @@ def _ollama_chat(model: str, system: str, user: str, temperature: float,
 
 def generate_json(system: str, user: str, schema: dict | None = None,
                   model: str | None = None, temperature: float = 0.7,
-                  max_tokens: int = 500, repeat_penalty: float = 1.3) -> str:
+                  max_tokens: int = 500, repeat_penalty: float = 1.3,
+                  think: bool = True) -> str:
     """One schema-constrained completion, returned as raw JSON for the caller to parse."""
     model = model or DEFAULT_MODEL
     if model.startswith("gemini"):
         return _gemini_generate(system, user, model, temperature, max_tokens, schema)
     return _ollama_chat(model, system, user, temperature, max_tokens, repeat_penalty,
-                        schema if schema is not None else "json")
+                        schema if schema is not None else "json", think=think)
 
 
 def generate_text(system: str, user: str, model: str | None = None,
                   temperature: float = 0.7, max_tokens: int = 400,
-                  repeat_penalty: float = 1.3) -> str:
+                  repeat_penalty: float = 1.3, think: bool = True) -> str:
     """One plain-text completion."""
     model = model or DEFAULT_MODEL
     if model.startswith("gemini"):
         return _gemini_generate(system, user, model, temperature, max_tokens, None)
-    return _ollama_chat(model, system, user, temperature, max_tokens, repeat_penalty, None)
+    return _ollama_chat(model, system, user, temperature, max_tokens, repeat_penalty, None, think=think)
 
 
 def _gemini_generate(system: str, user: str, model: str, temperature: float,

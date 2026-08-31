@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { Panel, Tag, MetricCard, ListCard, Pill, EmptyState } from '../components/ui'
 import RunPanel from '../components/RunPanel'
 import { Header } from './PromptInjection'
@@ -22,7 +22,6 @@ export default function MerchantFraud() {
       <RunPanel
         vector="merchant-fraud"
         title="Run the campaign"
-        note="fully local (CTGAN + Keras) — no API quota used"
         accent="amber"
         onDone={refetch}
         fields={[
@@ -43,7 +42,7 @@ function Dashboard({ mf }: { mf: MerchantFraudData }) {
 
   return (
     <>
-      <Panel title="Generate → filter → mine" tags={<><Tag accent="red">red</Tag><Tag accent="blue">blue</Tag></>} note="the evaded column is the product, not the failure" accent="amber">
+      <Panel title="Generate → filter → mine" tags={<><Tag accent="red">red</Tag><Tag accent="blue">blue</Tag></>} accent="amber">
         <PipelineDiagram mf={mf} />
       </Panel>
 
@@ -54,12 +53,12 @@ function Dashboard({ mf }: { mf: MerchantFraudData }) {
         <MetricCard label="Threshold" value={mf.threshold.toFixed(2)} accent="blue" sub="decision boundary" />
       </div>
 
-      <Panel title="Augmentation lifts every metric" note="pre- vs. post-CTGAN augmentation, from the team's held-out ablation" accent="amber">
+      <Panel title="Augmentation lifts every metric" note="pre- vs. post-CTGAN augmentation" accent="amber">
         <TrainCurveChart rows={mf.trainCurve} />
       </Panel>
 
       {sample && (
-        <Panel title="Explore an evaded candidate" note="real synthetic profiles that beat the classifier — click through them" accent="amber">
+        <Panel title="Explore an evaded candidate" note="real synthetic profiles that beat the classifier" accent="amber">
           <div className="flex gap-1.5 mb-4 flex-wrap">
             {mf.evadedSamples.map((_, i) => (
               <button
@@ -158,20 +157,89 @@ function Step({
   )
 }
 
-function TrainCurveChart({ rows }: { rows: MerchantFraudData['trainCurve'] }) {
-  const data = rows.map((r) => ({ name: r.model.replace(' (CTGAN-augmented)', '').replace(' (baseline)', ''), F1: r.f1, 'PR-AUC': r.prAuc }))
+const METRIC_KEYS = ['Precision', 'Recall', 'F1', 'ROC-AUC', 'PR-AUC'] as const
+type MetricKey = (typeof METRIC_KEYS)[number]
+const METRIC_COLOR: Record<MetricKey, string> = {
+  Precision: 'var(--red)', Recall: 'var(--violet)', F1: 'var(--amber)', 'ROC-AUC': 'var(--ink)', 'PR-AUC': 'var(--blue)',
+}
+const METRIC_FIELD: Record<MetricKey, keyof MerchantFraudData['trainCurve'][number]> = {
+  Precision: 'precision', Recall: 'recall', F1: 'f1', 'ROC-AUC': 'rocAuc', 'PR-AUC': 'prAuc',
+}
+
+function ModelAxisTick({ x, y, payload }: { x?: number; y?: number; payload?: { value: string } }) {
+  const words = (payload?.value ?? '').split(' ')
+  const line1 = words[0] ?? ''
+  const line2 = words.slice(1).join(' ')
   return (
-    <div style={{ width: '100%', height: 220 }}>
-      <ResponsiveContainer>
-        <BarChart data={data} margin={{ top: 6, right: 12, left: -18, bottom: 0 }}>
-          <CartesianGrid stroke="var(--rule-soft)" vertical={false} />
-          <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={{ stroke: 'var(--rule)' }} tickLine={false} interval={0} angle={-12} textAnchor="end" height={54} />
-          <YAxis domain={[0.75, 1]} tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
-          <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 8, fontSize: 11 }} />
-          <Bar dataKey="F1" fill="var(--amber)" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="PR-AUC" fill="var(--blue)" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+    <g transform={`translate(${x},${y})`}>
+      <text textAnchor="middle" fontFamily="var(--font-sans)" fontWeight={600} fill="var(--ink-2)">
+        <tspan x={0} dy="1em" fontSize={11.5}>{line1}</tspan>
+        {line2 && <tspan x={0} dy="1.25em" fontSize={11.5}>{line2}</tspan>}
+      </text>
+    </g>
+  )
+}
+
+function TrainCurveChart({ rows }: { rows: MerchantFraudData['trainCurve'] }) {
+  const [selected, setSelected] = useState<MetricKey[]>(['F1', 'PR-AUC'])
+
+  const toggle = (m: MetricKey) => setSelected((s) => {
+    if (s.includes(m)) return s.length > 1 ? s.filter((k) => k !== m) : s
+    return [...s, m]
+  })
+
+  const data = rows.map((r) => {
+    const name = r.model.replace(' (CTGAN-augmented)', '').replace(' (baseline)', '')
+    const entry: Record<string, string | number> = { name }
+    for (const m of METRIC_KEYS) entry[m] = r[METRIC_FIELD[m]]
+    return entry
+  })
+
+  const values = data.flatMap((d) => selected.map((m) => d[m] as number))
+  const yMin = Math.max(0, Math.floor((Math.min(...values) - 0.03) * 20) / 20)
+
+  return (
+    <div className="flex flex-col gap-3.5">
+      <div className="flex flex-wrap gap-2">
+        {METRIC_KEYS.map((m) => {
+          const active = selected.includes(m)
+          return (
+            <button
+              key={m}
+              onClick={() => toggle(m)}
+              className="flex items-center gap-1.5 text-[length:var(--text-xs)] font-bold px-2.5 py-1.5 rounded-full border transition-colors"
+              style={{
+                borderColor: active ? METRIC_COLOR[m] : 'var(--rule)',
+                background: active ? `color-mix(in srgb, ${METRIC_COLOR[m]} 12%, var(--surface))` : 'var(--surface)',
+                color: active ? METRIC_COLOR[m] : 'var(--muted)',
+              }}
+            >
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: active ? METRIC_COLOR[m] : 'var(--rule)' }} />
+              {m}
+            </button>
+          )
+        })}
+      </div>
+
+      <div style={{ width: '100%', height: 260 }}>
+        <ResponsiveContainer>
+          <BarChart data={data} margin={{ top: 20, right: 12, left: -18, bottom: 0 }}>
+            <CartesianGrid stroke="var(--rule-soft)" vertical={false} />
+            <XAxis dataKey="name" tick={<ModelAxisTick />} axisLine={{ stroke: 'var(--rule)' }} tickLine={false} interval={0} height={40} />
+            <YAxis domain={[yMin, 1]} tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
+            <Tooltip
+              cursor={{ fill: 'var(--sunk)' }}
+              contentStyle={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 10, fontSize: 12, padding: '10px 12px', boxShadow: 'var(--shadow-md)' }}
+              labelStyle={{ fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}
+              formatter={(value: number) => value.toFixed(3)}
+            />
+            <Legend wrapperStyle={{ fontSize: 12, fontWeight: 600 }} iconType="circle" iconSize={9} />
+            {selected.map((m) => (
+              <Bar key={m} dataKey={m} fill={METRIC_COLOR[m]} radius={[4, 4, 0, 0]} maxBarSize={44} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   )
 }

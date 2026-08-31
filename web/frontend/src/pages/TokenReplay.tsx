@@ -57,7 +57,6 @@ export default function TokenReplay() {
       <RunPanel
         vector="token-replay"
         title="Run the pipeline"
-        note="fully local (LightGBM + deterministic checks) — no API quota used"
         accent="blue"
         onDone={refetch}
         fields={[
@@ -79,7 +78,7 @@ function Dashboard({ tr }: { tr: TokenReplayData }) {
 
   return (
     <>
-      <Panel title="Detection funnel" tags={<><Tag accent="blue">layer 1</Tag><Tag accent="amber">layer 2</Tag></>} note="which layer catches which sub-class — the division of labor is designed" accent="blue">
+      <Panel title="Detection funnel" tags={<><Tag accent="blue">layer 1</Tag><Tag accent="amber">layer 2</Tag></>} accent="blue">
         <Funnel tr={tr} />
       </Panel>
 
@@ -191,7 +190,7 @@ function Dashboard({ tr }: { tr: TokenReplayData }) {
         </Panel>
       </div>
 
-      <Panel title="The feedback loop, run for real" note="entries from the team's own build log" accent="blue">
+      <Panel title="The feedback loop, run for real" accent="blue">
         <div className="flex flex-col">
           {tr.feedbackLoop.map((f, i) => {
             const info = FEEDBACK_STYLE[f.tag] ?? FEEDBACK_STYLE['robustness check']

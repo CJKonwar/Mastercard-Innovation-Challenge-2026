@@ -1,13 +1,21 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { VECTORS, type Accent } from '../data'
 import { useResultsContext } from '../lib/ResultsContext'
 
 export default function Layout() {
   const { backendUp, refetch } = useResultsContext()
+  const mainRef = useRef<HTMLElement>(null)
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0)
+  }, [pathname])
+
   return (
-    <div className="grid min-h-screen" style={{ gridTemplateColumns: '260px minmax(0,1fr)' }}>
+    <div className="grid h-screen" style={{ gridTemplateColumns: '260px minmax(0,1fr)' }}>
       <aside
-        className="flex flex-col gap-5 p-4 border-r"
+        className="flex flex-col gap-5 p-4 border-r overflow-y-auto"
         style={{ background: 'var(--surface-2)', borderColor: 'var(--rule)' }}
       >
         <div className="flex items-start gap-2.5">
@@ -31,12 +39,9 @@ export default function Layout() {
           ))}
         </div>
 
-        <div className="mt-auto text-[length:var(--text-xs)] leading-relaxed" style={{ color: 'var(--muted)' }}>
-          Sandboxed simulation — no real payment rails, no live cards, no customer data.
-        </div>
       </aside>
 
-      <main className="min-w-0 px-6 py-5 pb-10 flex flex-col gap-4">
+      <main ref={mainRef} className="min-w-0 px-6 py-5 pb-10 flex flex-col gap-4 overflow-y-auto">
         {backendUp === false && (
           <div
             className="flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 text-[length:var(--text-sm)]"
