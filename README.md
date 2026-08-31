@@ -8,10 +8,12 @@ Every vector follows the same shape: identify a real attack surface, generate re
 
 > **Sandboxed simulation throughout.** No real payment rails, no live cards, no customer data, anywhere in this repository.
 
-<img width="1512" height="827" alt="Screenshot 2026-08-31 at 5 22 31 PM" src="https://github.com/user-attachments/assets/5e57d933-8776-484e-8e29-750f6c455e42" />
-<img width="1512" height="827" alt="Screenshot 2026-08-31 at 5 22 58 PM" src="https://github.com/user-attachments/assets/b1457601-9c66-434d-88d2-5386f9fe24a4" />
-
-
+<table>
+  <tr>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/5e57d933-8776-484e-8e29-750f6c455e42" width="100%" alt="Screenshot 2026-08-31 at 5 22 31 PM" /></td>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/b1457601-9c66-434d-88d2-5386f9fe24a4" width="100%" alt="Screenshot 2026-08-31 at 5 22 58 PM" /></td>
+  </tr>
+</table>
 
 ---
 
@@ -144,11 +146,12 @@ MasterCard AI Garage/
 
 The `web/` app lets you start any vector's real CLI from a browser, watch its live terminal output, and see the results — read straight from each vector's own output files on disk, with no caching and no fabricated numbers.
 
-<img width="1512" height="827" alt="Screenshot 2026-08-31 at 5 24 24 PM" src="https://github.com/user-attachments/assets/fa1358d2-e2a7-46da-9ffc-3c40e3406a19" />
-<img width="1512" height="827" alt="Screenshot 2026-08-31 at 5 24 59 PM" src="https://github.com/user-attachments/assets/e58d494c-f117-43eb-bf1f-b58cb2d83f2a" />
-
-
-
+<table>
+  <tr>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/fa1358d2-e2a7-46da-9ffc-3c40e3406a19" width="100%" alt="Screenshot 2026-08-31 at 5 24 24 PM" /></td>
+    <td width="50%"><img src="https://github.com/user-attachments/assets/e58d494c-f117-43eb-bf1f-b58cb2d83f2a" width="100%" alt="Screenshot 2026-08-31 at 5 24 59 PM" /></td>
+  </tr>
+</table>
 
 Each vector page shows:
 - **Run panel** — a live, color-coded terminal box streaming that vector's actual subprocess output, with Start/Stop controls.
