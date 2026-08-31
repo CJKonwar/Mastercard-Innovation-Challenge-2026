@@ -8,8 +8,10 @@ Every vector follows the same shape: identify a real attack surface, generate re
 
 > **Sandboxed simulation throughout.** No real payment rails, no live cards, no customer data, anywhere in this repository.
 
-<!-- TODO: hero screenshot — the Overview page's "Four architectures, one lifecycle" panel -->
-![Overview page](docs/images/overview.png)
+<img width="1512" height="827" alt="Screenshot 2026-08-31 at 5 22 31 PM" src="https://github.com/user-attachments/assets/5e57d933-8776-484e-8e29-750f6c455e42" />
+<img width="1512" height="827" alt="Screenshot 2026-08-31 at 5 22 58 PM" src="https://github.com/user-attachments/assets/b1457601-9c66-434d-88d2-5386f9fe24a4" />
+
+
 
 ---
 
@@ -135,8 +137,6 @@ MasterCard AI Garage/
             └── lib/                # API client, live-results polling
 ```
 
-<!-- TODO: your own project-directory screenshot can replace or sit alongside this tree -->
-![Project directory](docs/images/project-structure.png)
 
 ---
 
@@ -144,9 +144,11 @@ MasterCard AI Garage/
 
 The `web/` app lets you start any vector's real CLI from a browser, watch its live terminal output, and see the results — read straight from each vector's own output files on disk, with no caching and no fabricated numbers.
 
-<!-- TODO: screenshots — Overview page, one vector's RunPanel + live terminal, one architecture flip card -->
-![Prompt Injection dashboard](docs/images/prompt-injection-dashboard.png)
-![Live terminal output](docs/images/terminal-log.png)
+<img width="1512" height="827" alt="Screenshot 2026-08-31 at 5 24 24 PM" src="https://github.com/user-attachments/assets/fa1358d2-e2a7-46da-9ffc-3c40e3406a19" />
+<img width="1512" height="827" alt="Screenshot 2026-08-31 at 5 24 59 PM" src="https://github.com/user-attachments/assets/e58d494c-f117-43eb-bf1f-b58cb2d83f2a" />
+
+
+
 
 Each vector page shows:
 - **Run panel** — a live, color-coded terminal box streaming that vector's actual subprocess output, with Start/Stop controls.
