@@ -13,6 +13,18 @@ const TERM = {
   bright: '#F3F4F6',
 }
 
+// Vector CLI scripts print decorative emoji (✅ 🎯 📊 ⏹️ ...) for a real
+// terminal. In this boxed web view they just read as clutter, so strip them
+// from what's displayed - lineStyle still runs on the original line below,
+// so emoji-based color cues (❌ ⚠ ✅) keep working even once the glyph itself
+// is gone from the rendered text.
+const EMOJI_SRC = '\\p{Extended_Pictographic}(\\u200D\\p{Extended_Pictographic})*\\uFE0F?'
+const EMOJI = new RegExp(EMOJI_SRC, 'gu')
+const LEADING_EMOJI = new RegExp(`^(\\s*)(${EMOJI_SRC}\\s*)+`, 'u')
+function stripEmoji(line: string): string {
+  return line.replace(LEADING_EMOJI, '$1').replace(EMOJI, '')
+}
+
 function lineStyle(line: string): { color: string; weight?: number } {
   const t = line.trim()
   if (/^[=\-─]{5,}$/.test(t)) return { color: TERM.dim }
@@ -89,9 +101,10 @@ export default function TerminalLog({
         ) : (
           lines.map((line, i) => {
             const s = lineStyle(line)
+            const clean = stripEmoji(line)
             return (
               <div key={i} style={{ color: s.color, fontWeight: s.weight, whiteSpace: 'pre-wrap' }}>
-                {line || ' '}
+                {clean || ' '}
               </div>
             )
           })

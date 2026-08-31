@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Panel, MetricCard, EmptyState } from '../components/ui'
 import { useResultsContext } from '../lib/ResultsContext'
@@ -273,8 +273,33 @@ function VectorArchCard({
   const [flipped, setFlipped] = useState(false)
   const color = `var(--${info.accent})`
   const wash = `var(--${info.accent}-wash)`
+
+  // Auto-revert to the front after a spell of no interaction, so a card
+  // doesn't stay flipped indefinitely once someone's attention has moved on.
+  const revertTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hovered = useRef(false)
+
+  const clearRevertTimer = () => {
+    if (revertTimer.current) { clearTimeout(revertTimer.current); revertTimer.current = null }
+  }
+  const scheduleRevert = () => {
+    clearRevertTimer()
+    if (!hovered.current) revertTimer.current = setTimeout(() => setFlipped(false), 15000)
+  }
+
+  useEffect(() => {
+    if (flipped) scheduleRevert()
+    else clearRevertTimer()
+    return clearRevertTimer
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flipped])
+
   return (
-    <div style={{ perspective: 1600 }}>
+    <div
+      style={{ perspective: 1600 }}
+      onMouseEnter={() => { hovered.current = true; clearRevertTimer() }}
+      onMouseLeave={() => { hovered.current = false; if (flipped) scheduleRevert() }}
+    >
       <div
         className="relative transition-transform duration-700"
         style={{ transformStyle: 'preserve-3d', transform: flipped ? 'rotateY(180deg)' : 'none', minHeight: 320 }}
