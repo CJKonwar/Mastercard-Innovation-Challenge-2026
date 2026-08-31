@@ -1,4 +1,4 @@
-# AI Defense Lab for Payment Security
+# AI Defense Lab 
 
 **Mastercard Innovation Challenge @ GFF 2026 — Team Bias Bros**
 
@@ -78,8 +78,7 @@ Every vector runs the same shape, with a different real mechanism underneath:
               (the closed loop)
 ```
 
-<!-- TODO: full architecture diagram screenshot — the "Closed-Loop Architecture" figure, e.g. Prompt Injection's zoomed-in flip card -->
-![Closed-loop architecture](docs/images/architecture.png)
+
 
 ---
 
